@@ -1,0 +1,26 @@
+services:
+  soc-manager:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: soc-manager
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    environment:
+      NETBOX_URL:    ${NETBOX_URL}
+      NETBOX_TOKEN:  ${NETBOX_TOKEN}
+      MAPPING_FILE:  /data/mapping.yaml
+      VERIFY_SSL:    ${VERIFY_SSL:-false}
+    volumes:
+      # mapping.yaml persists outside the container
+      - ${MAPPING_PATH:-./data}:/data
+      # optionally mount netbox_schema_pull.py for live form generation
+      - ${SCHEMA_PULL_PATH:-./netbox_schema_pull.py}:/app/netbox_schema_pull.py:ro
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
